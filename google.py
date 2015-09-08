@@ -1,5 +1,6 @@
 #Might have to import googlemaps using pip
 from googlemaps import Client
+import EpochTime
 
 #Reources
 # https://developers.google.com/maps/documentation/directions/intro
@@ -77,17 +78,22 @@ def end_address(route):
 
 
 #--------------------------------Steps of Journey Information------------------------------#
+def get_steps(route):
+    return route['legs'][0]['steps']
+
 def get_step(route, number):
     return route['legs'][0]['steps'][number]
 
 def num_steps(route):
-    return len(route)
+    return len(route['legs'][0]['steps'])
+
 
 # Print html encoded trip instruction list
 # TODO: Doesnt print substeps
 def print_instructions(directions):
     for step in route['legs'][0]['steps']:
         print(step['html_instructions'])
+
 
 
 
@@ -109,10 +115,50 @@ def step_transit_details_short_name(step):
     else:
         return None
 
+def step_walking_distance_str(step):
+    if(step['travel_mode']=='WALKING'):
+        return step['distance']['text']
+    else:
+        return None
+
+def vehicle_type(step):
+    if(step['travel_mode']=='TRANSIT'):
+        return step['transit_details']['line']['vehicle']['name']
+    else:
+        return None
+
+def transit_timetable(directions):
+    n_routes = num_routes(directions)
+    n_steps = []
+    departureTimes = []
+    arrivalTimes = []
+    step_array = []
+    i = 0
+    for route in directions:
+        n_steps.append(num_steps(route))
+        departureTimes.append(departure_time_str(route))
+        arrivalTimes.append(arrival_time_str(route))
+        tempList = []
+        for step in get_steps(route):
+            if(travel_type(step)=='TRANSIT'):
+                vehicle = vehicle_type(step)
+                lineName = step_transit_details_short_name(step)
+                string = vehicle + " " + lineName
+                tempList.append(string)
+            elif(travel_type(step)=='WALKING'):
+                string = step_walking_distance_str(step) + " walk."
+                tempList.append(string)
+            else:
+                tempList.append(travel_type(step))
+        step_array.append(tempList)
+        print(departureTimes[i],"||",step_array[i],"||",arrivalTimes[i])
+        i+=1
+    
 
 print("--------------------------------------------------------------------------------------")
 directions_transit = get_directions('Cavendish Road, Coorparoo','Southbank, Brisbane','transit')
-transit_route = get_route(directions_transit)
-transit_step = get_step(transit_route,1)
-travel_type(transit_step)
+transit_timetable(directions_transit)
+#transit_route = get_route(directions_transit)
+#transit_step = get_step(transit_route,1)
+#travel_type(transit_step)
 
