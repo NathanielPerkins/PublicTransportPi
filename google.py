@@ -127,6 +127,54 @@ def vehicle_type(step):
     else:
         return None
 
+
+#--------------------------------Steps of Journey Information------------------------------#
+
+def header():
+    headerLength = 100
+    line1 = ""
+    line2 = ""
+    line3 = ""
+    column1 = "Departure"
+    column3 = "Arrival"
+    
+    for i in range(0, headerLength):
+        if(i==0 or i==headerLength-1):
+            line1 += "|"
+            line3 += "|"
+        else:
+            line1 += "-"
+            line3 += "-"
+
+    dividerLength = 1/5;
+
+    stringCounter = 0;
+    stringCounter3 = 0;
+    for i in range(0, headerLength):
+        if(i==0 or i==headerLength-1):
+            line2 += "|"
+        elif(i>0 and i<round(headerLength*dividerLength)):
+            if(stringCounter<len(column1)):
+                line2 += column1[stringCounter]
+                stringCounter+=1
+            else:
+                line2 += " "
+        elif(i>round((4*headerLength)*dividerLength) and i<headerLength):
+            if(stringCounter3<len(column3)):
+                line2 += column3[stringCounter3]
+                stringCounter3+=1
+            else:
+                line2 += " "
+        elif(i == round(headerLength*dividerLength) or i == round((4*headerLength)*dividerLength)):
+            line2 += "|"
+        else:
+            line2 += " "
+
+    print(line1)
+    print(line2)
+    print(line3)
+    
+    
 def transit_timetable(directions):
     n_routes = num_routes(directions)
     n_steps = []
@@ -155,8 +203,8 @@ def transit_timetable(directions):
         i+=1
     
 
-print("--------------------------------------------------------------------------------------")
-directions_transit = get_directions('Cavendish Road, Coorparoo','Southbank, Brisbane','transit')
+header()
+directions_transit = get_directions('160 Central Avenue, Indroopilly','Southbank, Brisbane','transit')
 transit_timetable(directions_transit)
 #transit_route = get_route(directions_transit)
 #transit_step = get_step(transit_route,1)
