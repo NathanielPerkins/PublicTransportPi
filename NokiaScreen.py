@@ -32,14 +32,18 @@ class UI:
     #Clock variables
     blinkTime = timedelta(seconds = 1) #Frequency at which clock blinks
     clockFormat = "%I:%M %p" #initialize clock format
+    currentStep = 0
+    
+    verticalScrollTime = timedelta(seconds = 2)
     
     def __init__(self, disp, draw):
         self.disp = disp
         self.draw = draw
         self.nextUpdate = get_current_time()
         self.nextBlink = get_current_time() + self.blinkTime
-        self.origin.append('232 Cavendish Rd, Coorparoo')
-        self.destination.append('Southbank, Brisbane')
+        self.verticalUpdate = get_current_time() +self.verticalScrollTime
+        self.origin.append('Surfers Paradise, QLD')
+        self.destination.append('Queensland University of Technology')
         self.routes = google.get_directions(self.origin[self.selectedRoute],self.destination[self.selectedRoute],'transit')
         PTCGPIO.setup(ledMap,buttonMap)
         self.buttonStates = [False] * len(buttonMap)
@@ -63,8 +67,16 @@ class UI:
         writeText(0, timeStr)
 
 
+
+    def timeCheck(self,updateTime):
+        if((updateTime - get_current_time()).total_seconds() <= 0):
+            return True
+        else:
+            return False
+
+    
     def updateList(self):
-        if((self.nextUpdate - get_current_time()).total_seconds() <= 0):
+        if(timeCheck(self.nextUpdate)):
             self.routes = google.get_directions(self.route[self.selectedRoute],self.destination[self.selectedRoute],'transit')
             self.nextUpdate = get_current_time() + self.updateTime
             self.clearScreen()
@@ -113,13 +125,68 @@ class UI:
         arrivalTime = google.arrival_time_str(self.routes[self.selectedRoute])
         writeText(5,"ETA:"+arrivalTime)
 
+    def fetchIndividual(self):
+        return google.routeInfo(self.routes[self.selectedRoute])
+
+    def writeIndividual(self):
+        routeInfo = self.fetchIndividual()
+        self.clearScreen()
+        writeText(0,`self.selectedRoute`,x=78)
+        writeText(1,"ETD:"+routeInfo['DepartureTime'])
+        self.scrollableVertical(routeInfo)
+        writeText(5,"ETA:"+routeInfo['ArrivalTime'])
+
+
+    def scrollableVertical(self,routeInfo):
+        if(routeInfo['NumberSteps']<=3):
+            for i in range(routeInfo['NumberSteps']):
+                step = routeInfo['Steps'][i] 
+                if(step['Type']=='TRANSIT'):
+                    string = `i+1`+"|"+step['Vehicle']+":"+step['LineName']
+                else:
+                    string = `i+1`+"|"+step['Type']+":"+step['Distance']
+                writeText(i+2,string)
+        else:
+            if(self.timeCheck(self.verticalUpdate)):
+                if(self.currentStep<routeInfo['NumberSteps']-1):
+                    self.currentStep += 1
+                else:
+                    self.currentStep = 0
+                self.verticalUpdate = get_current_time() + self.verticalScrollTime
+
+            lineCounter = 2
+            for i in self.scrollIndexRange(routeInfo['NumberSteps'],self.currentStep):
+                #print("Current Step: "+`self.currentStep`)
+                #print(self.scrollIndexRange(routeInfo['NumberSteps'],self.currentStep))
+                step = routeInfo['Steps'][i] 
+                if(step['Type']=='TRANSIT'):
+                    string = `i+1`+"|"+step['Vehicle']+":"+step['LineName']
+                else:
+                    string = `i+1`+"|"+step['Type']+":"+step['Distance']
+                writeText(lineCounter,string)
+                lineCounter +=1
+            lineCounter = 2
+
+    def scrollIndexRange(self,numSteps,chosenStep):
+        definedRange = [chosenStep]
+        if(chosenStep+1>=numSteps):
+            definedRange += range(2)
+        elif(chosenStep+2>=numSteps):
+            definedRange += [chosenStep+1,0]
+        else:
+            definedRange = range(chosenStep,chosenStep+3)
+        return definedRange
+        
+            
 
     def update(self):
-        self.drawIndividual()
+        self.writeIndividual()
         self.updateClockTime()
         
         #self.updateList()
         if(self.buttonStates[0]):
+            #Reinitialize scrolling text index on route change
+            self.currentStep = 0
             if(self.selectedRoute<google.num_routes(self.routes)-1):
                 self.selectedRoute += 1
             else:
@@ -150,7 +217,7 @@ class UI:
 
 
 #ToDo: Optimize
-def writeText(line, string, center=False, offset=None):
+def writeText(line, string, offset=None, x=None):
     # Load default font.
     font = ImageFont.load_default()
 
@@ -164,15 +231,16 @@ def writeText(line, string, center=False, offset=None):
             else:
                 draw.text(((offset*5),(line*8)-2), "Error Fit", font=font)
         else:
-            if(center):
-                x = round((LCD.LCDWIDTH - len(string)*6)/2)
+            if(x):
+                if(len(string)<=maxChars):
+                    draw.text((x,(line*8)-2), string, font=font)
+                else:
+                    draw.text((x,(line*8)-2), "Error Fit", font=font)
             else:
-                x = 0
-                
-            if(len(string)<=maxChars):
-                draw.text((x,(line*8)-2), string, font=font)
-            else:
-                draw.text((x,(line*8)-2), "Error Fit", font=font)
+                if(len(string)<=maxChars):
+                    draw.text((0,(line*8)-2), string, font=font)
+                else:
+                    draw.text((0,(line*8)-2), "Error Fit", font=font)
 
 
 

@@ -145,6 +145,27 @@ def vehicle_type(step):
 
 #--------------------------------Steps of Journey Information------------------------------#
 
+def routeInfo(route):
+    departureTime = departure_time_str(route)
+    arrivalTime = arrival_time_str(route)
+    routeInfo = {'DepartureTime':departureTime,'ArrivalTime':arrivalTime}
+
+    routeInfo['NumberSteps'] = num_steps(route)
+
+    stepsInfo = []
+    for step in get_steps(route):
+        if(travel_type(step)=='TRANSIT'):
+            vehicle = vehicle_type(step)
+            lineName = step_transit_details_short_name(step)
+            stepInfo = {'Type':'TRANSIT','Vehicle':vehicle,'LineName':lineName}
+        else:#travel type is walking
+            distance = step_walking_distance_str(step)
+            stepInfo = {'Type':'Walk','Distance':distance}
+        stepsInfo.append(stepInfo)
+
+    routeInfo['Steps'] = stepsInfo
+    return routeInfo
+
 def header():
     headerLength = 100
     line1 = ""
