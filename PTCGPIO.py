@@ -12,9 +12,9 @@ def buttonCheck(buttonMap):
     on = []
     for x in buttonMap:
         if GPIO.input(x):
-            on.append(1)
+            on.append(True)
         else:
-            on.append(0)
+            on.append(False)
     return on
         
 ledMap = []

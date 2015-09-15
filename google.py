@@ -90,7 +90,7 @@ def num_steps(route):
 
 # Print html encoded trip instruction list
 # TODO: Doesnt print substeps
-def print_instructions(directions):
+def print_instructions(route):
     for step in route['legs'][0]['steps']:
         print(step['html_instructions'])
 
@@ -99,6 +99,21 @@ def print_instructions(directions):
 
 
 #---------------------------Transit Information---------------------------#
+def num_transfers(route):
+    transfers = 0
+    for step in route['legs'][0]['steps']:
+        if(step['travel_mode']=='TRANSIT'):
+            transfers += 1
+    return transfers
+
+def get_transit_steps(route):
+    transitSteps = []
+    counter = 0
+    for step in route['legs'][0]['steps']:
+        if(step['travel_mode']=='TRANSIT'):
+            transitSteps.append(counter)
+        counter += 1
+    return transitSteps
 
 def travel_type(step):
     return step['travel_mode']
@@ -203,9 +218,9 @@ def transit_timetable(directions):
         i+=1
     
 
-header()
-directions_transit = get_directions('160 Central Avenue, Indroopilly','Southbank, Brisbane','transit')
-transit_timetable(directions_transit)
+#header()
+#directions_transit = get_directions('160 Central Avenue, Indroopilly','Southbank, Brisbane','transit')
+#transit_timetable(directions_transit)
 #transit_route = get_route(directions_transit)
 #transit_step = get_step(transit_route,1)
 #travel_type(transit_step)
