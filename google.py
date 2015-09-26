@@ -25,7 +25,6 @@ def get_directions(start_location, end_location, mode=None):
     else:
         return mapService.directions(start_location, end_location)
 
-
 #------------------------------------Route Information-----------------------------------#
 
 def get_route(directions,route=None):

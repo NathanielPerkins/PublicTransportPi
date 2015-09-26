@@ -1,9 +1,11 @@
 import time
 
-from datetime import datetime
+#from datetime import datetime
 from datetime import timedelta
+from datetime import time
 import google
 import PTCGPIO
+import Alarm
 
 import Adafruit_Nokia_LCD as LCD
 import Adafruit_GPIO.SPI as SPI
@@ -48,6 +50,8 @@ class UI:
         PTCGPIO.setup(ledMap,buttonMap)
         self.buttonStates = [False] * len(buttonMap)
         self.clearScreen()
+        self.alarm = Alarm.Alarm()
+        self.alarm.setAlarmEpoch(google.departure_time_val(self.routes[self.selectedRoute]))
 
 
     # Updates clock with current time
@@ -75,12 +79,43 @@ class UI:
             return False
 
     
+
+
+#-------------------------------------Clear Functions--------------------------------#
+
+    def clearScreen(self):
+         # Draw a white filled box to clear the image.
+        self.draw.rectangle((0,0,LCD.LCDWIDTH,LCD.LCDHEIGHT), outline=255, fill=255)
+
+    def clearHeader(self):
+        self.draw.rectangle((0,0,9*5,7), outline=255, fill=255)
+
+
+#----------------------------Buttons-------------------------------------------------#
+    def checkInputs(self):
+        on = PTCGPIO.buttonCheck(buttonMap)
+        self.buttonStates = on
+
+    def resetInputs(self):
+        self.buttonStates = [False] * len(buttonMap)
+
+    def checkInput(self, button):
+        on = PTCGPIO.buttonCheck(buttonMap)
+        return on[button]
+
+
+
+
+#---------------------------------------------List Display-------------------------------------------------#
+
     def updateList(self):
         if(timeCheck(self.nextUpdate)):
             self.routes = google.get_directions(self.route[self.selectedRoute],self.destination[self.selectedRoute],'transit')
             self.nextUpdate = get_current_time() + self.updateTime
             self.clearScreen()
             self.drawList()
+
+
 
 
     def drawList(self):
@@ -106,6 +141,11 @@ class UI:
                 string = vehicle[0] + ":" + lineName
                 writeText(i+1,string)
             
+
+
+#----------------------------------Specific Display--------------------------------#
+
+    #DEPRECATED
     def drawIndividual(self):
         self.clearScreen()
         writeText(0,`self.selectedRoute`,offset=13)
@@ -124,6 +164,11 @@ class UI:
 
         arrivalTime = google.arrival_time_str(self.routes[self.selectedRoute])
         writeText(5,"ETA:"+arrivalTime)
+
+
+
+
+
 
     def fetchIndividual(self):
         return google.routeInfo(self.routes[self.selectedRoute])
@@ -167,6 +212,8 @@ class UI:
                 lineCounter +=1
             lineCounter = 2
 
+
+
     def scrollIndexRange(self,numSteps,chosenStep):
         definedRange = [chosenStep]
         if(chosenStep+1>=numSteps):
@@ -177,43 +224,38 @@ class UI:
             definedRange = range(chosenStep,chosenStep+3)
         return definedRange
         
-            
 
-    def update(self):
-        self.writeIndividual()
-        self.updateClockTime()
-        
-        #self.updateList()
-        if(self.buttonStates[0]):
+
+    def changeSelectedRoute(self,buttonState):
+        if(buttonState):
             #Reinitialize scrolling text index on route change
             self.currentStep = 0
             if(self.selectedRoute<google.num_routes(self.routes)-1):
                 self.selectedRoute += 1
             else:
                 self.selectedRoute = 0
+            self.alarm.setAlarmEpoch(google.departure_time_val(self.routes[self.selectedRoute]))
+                                 
+                
+        
 
+    def update(self):
+        self.writeIndividual()
+        self.updateClockTime()
+        
+        #self.updateList()
+        if(self.alarm.checkAlarmEpoch(get_current_epoch_time()) == 1):
+            self.alarm.Play()
+        
+        self.changeSelectedRoute(self.buttonStates[0])
+        
         self.disp.image(image)
         self.disp.display()
 
-    def clearScreen(self):
-         # Draw a white filled box to clear the image.
-        self.draw.rectangle((0,0,LCD.LCDWIDTH,LCD.LCDHEIGHT), outline=255, fill=255)
-
-    def clearHeader(self):
-        self.draw.rectangle((0,0,9*5,7), outline=255, fill=255)
 
 
-        
-    def checkInputs(self):
-        on = PTCGPIO.buttonCheck(buttonMap)
-        self.buttonStates = on
 
-    def resetInputs(self):
-        self.buttonStates = [False] * len(buttonMap)
 
-    def checkInput(self, button):
-        on = PTCGPIO.buttonCheck(buttonMap)
-        return on[button]
 
 
 #ToDo: Optimize
@@ -271,9 +313,13 @@ draw = ImageDraw.Draw(image)
 
 newUI = UI(disp, draw)
 
-while 1:
-    newUI.checkInputs()
-    newUI.update()
-    newUI.resetInputs()
-    
+try:
+    while 1:
+        newUI.checkInputs()
+        newUI.update()
+        newUI.resetInputs()
+
+except KeyboardInterrupt:
+        PTCGPIO.GPIO.cleanup()
+        newUI.alarm.Stop()
     
