@@ -1,24 +1,24 @@
-import time
 #Available GPIO's with PiTFT Screen
 #GPIO (5,6,12,13,19,16,26,20,21)
 #With PWM1 on 23,24 and PWM0 on 26
 
+DEBUG = 1
+
 #from datetime import datetime
-from datetime import timedelta
-from datetime import time
+from datetime import timedelta, time
 import google
-import PTCGPIO
 import Alarm
-
 from EpochTime import *
+import Tkinter
+from PIL import Image, ImageDraw, ImageFont, ImageTk
 
-from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
+if(DEBUG == 0):
+    import PTCGPIO
 
+w = 320
+h = 240
 
-
-buttonMap = [21]
+buttonMap = [5]
 ledMap = []
 
 
@@ -37,16 +37,21 @@ class UI:
     
     verticalScrollTime = timedelta(seconds = 2)
     
-    def __init__(self, disp, draw):
-        self.disp = disp
+    def __init__(self, canvas, image, draw):
+        self.canvas = canvas
+        self.image = image
         self.draw = draw
+
+        self.blinkOn = True
+        
         self.nextUpdate = get_current_time()
         self.nextBlink = get_current_time() + self.blinkTime
         self.verticalUpdate = get_current_time() +self.verticalScrollTime
         self.origin.append('Surfers Paradise, QLD')
         self.destination.append('Queensland University of Technology')
         self.routes = google.get_directions(self.origin[self.selectedRoute],self.destination[self.selectedRoute],'transit')
-        PTCGPIO.setup(ledMap,buttonMap)
+        if(DEBUG == 0):
+            PTCGPIO.setup(ledMap,buttonMap)
         self.buttonStates = [False] * len(buttonMap)
         self.clearScreen()
         self.alarm = Alarm.Alarm()
@@ -60,16 +65,21 @@ class UI:
         if((self.nextBlink - get_current_time()).total_seconds() <= 0):
             timeStr = get_current_time().time().strftime(self.clockFormat)
             self.nextBlink = get_current_time() + self.blinkTime
-            if(self.clockFormat == "%I:%M %p"):
-                self.clockFormat = "%I %M %p"
+            if(self.blinkOn):
+                self.blinkOn = False
             else:
-                 self.clockFormat = "%I:%M %p"
+                 self.blinkOn = True 
         else:
             timeStr = get_current_time().time().strftime(self.clockFormat)
-            
-        writeText(0, timeStr)
 
-
+        self.writeText(timeStr,0)
+        
+        if(not(self.blinkOn)):
+            self.draw.rectangle((34,0,40,32), outline=0, fill=0)
+        
+        
+   
+        
 
     def timeCheck(self,updateTime):
         if((updateTime - get_current_time()).total_seconds() <= 0):
@@ -84,23 +94,25 @@ class UI:
 
     def clearScreen(self):
          # Draw a white filled box to clear the image.
-        self.draw.rectangle((0,0,LCD.LCDWIDTH,LCD.LCDHEIGHT), outline=255, fill=255)
+        self.draw.rectangle((0,0,w,h), outline=0, fill=0)
 
     def clearHeader(self):
-        self.draw.rectangle((0,0,9*5,7), outline=255, fill=255)
+        self.draw.rectangle((0,0,320,32), outline=255, fill=0)
 
 
 #----------------------------Buttons-------------------------------------------------#
     def checkInputs(self):
-        on = PTCGPIO.buttonCheck(buttonMap)
-        self.buttonStates = on
+        if(DEBUG == 0):
+            on = PTCGPIO.buttonCheck(buttonMap)
+            self.buttonStates = on
 
     def resetInputs(self):
         self.buttonStates = [False] * len(buttonMap)
 
     def checkInput(self, button):
-        on = PTCGPIO.buttonCheck(buttonMap)
-        return on[button]
+        if(DEBUG == 0):
+            on = PTCGPIO.buttonCheck(buttonMap)
+            return on[button]
 
 
 
@@ -131,42 +143,18 @@ class UI:
                     vehicle = google.vehicle_type(step)
                     lineName = google.step_transit_details_short_name(step)
                     string += ">" + vehicle[0] + ":" + lineName
-                writeText(i+1,string)
+                self.writeText(string,i+1)
                     
             else:
                 step = google.get_step(self.routes[i],transitSteps[0])
                 vehicle = google.vehicle_type(step)
                 lineName = google.step_transit_details_short_name(step)
                 string = vehicle[0] + ":" + lineName
-                writeText(i+1,string)
+                self.writeText(string,i+1)
             
 
 
 #----------------------------------Specific Display--------------------------------#
-
-    #DEPRECATED
-    def drawIndividual(self):
-        self.clearScreen()
-        writeText(0,`self.selectedRoute`,offset=13)
-        departureTime = google.departure_time_str(self.routes[self.selectedRoute])
-        writeText(1,"ETD:"+departureTime)
-        counter = 0
-        for step in google.get_steps(self.routes[self.selectedRoute]):
-            if(google.travel_type(step)=='TRANSIT'):
-                vehicle = google.vehicle_type(step)
-                lineName = google.step_transit_details_short_name(step)
-                string = vehicle + ":" + lineName
-            else:#travel type is walking
-                string = "Walk:"+google.step_walking_distance_str(step)
-            writeText(counter+2,string,offset=2)
-            counter +=1
-
-        arrivalTime = google.arrival_time_str(self.routes[self.selectedRoute])
-        writeText(5,"ETA:"+arrivalTime)
-
-
-
-
 
 
     def fetchIndividual(self):
@@ -175,10 +163,10 @@ class UI:
     def writeIndividual(self):
         routeInfo = self.fetchIndividual()
         self.clearScreen()
-        writeText(0,`self.selectedRoute`,x=78)
-        writeText(1,"ETD:"+routeInfo['DepartureTime'])
+        self.writeText(0,`self.selectedRoute`,x=78)
+        self.writeText(1,"ETD:"+routeInfo['DepartureTime'])
         self.scrollableVertical(routeInfo)
-        writeText(5,"ETA:"+routeInfo['ArrivalTime'])
+        self.writeText(5,"ETA:"+routeInfo['ArrivalTime'])
 
 
     def scrollableVertical(self,routeInfo):
@@ -189,7 +177,7 @@ class UI:
                     string = `i+1`+"|"+step['Vehicle']+":"+step['LineName']
                 else:
                     string = `i+1`+"|"+step['Type']+":"+step['Distance']
-                writeText(i+2,string)
+                self.writeText(string,i+2)
         else:
             if(self.timeCheck(self.verticalUpdate)):
                 if(self.currentStep<routeInfo['NumberSteps']-1):
@@ -207,7 +195,7 @@ class UI:
                     string = `i+1`+"|"+step['Vehicle']+":"+step['LineName']
                 else:
                     string = `i+1`+"|"+step['Type']+":"+step['Distance']
-                writeText(lineCounter,string)
+                self.writeText(string,lineCounter)
                 lineCounter +=1
             lineCounter = 2
 
@@ -236,64 +224,64 @@ class UI:
             self.alarm.setAlarmEpoch(google.departure_time_val(self.routes[self.selectedRoute]))
                                  
                 
-        
+    def drawUI(self):
+        split = 240/3
+        self.draw.line([0,split,w,split],fill=255)
+        self.draw.line([0,31,w,31],fill=255)
+        self.draw.line([0,32,w,32],fill=255)
+        self.writeText("Next Service:",x=2,y=30,fontSize=18)
 
     def update(self):
-        self.writeIndividual()
+        #self.writeIndividual()
         self.updateClockTime()
-        
+        self.drawUI()
         #self.updateList()
         if(self.alarm.checkAlarmEpoch(get_current_epoch_time()) == 1):
             self.alarm.Play()
         
         self.changeSelectedRoute(self.buttonStates[0])
         
-        self.disp.image(image)
-        self.disp.display()
 
 
 
 
 
-
-
-#ToDo: Optimize
-def writeText(line, string, offset=None, x=None):
-    # Load default font.
-    font = ImageFont.load_default()
-
-    maxLines = 5
-    maxChars = 14
-
-    if(line<=maxLines):
-        if(offset):
-            if(len(string)+offset<=maxChars):
-                draw.text(((offset*5),(line*8)-2), string, font=font)
-            else:
-                draw.text(((offset*5),(line*8)-2), "Error Fit", font=font)
+    #ToDo: Optimize
+    def writeText(self,string,line=None, x=None,y=None, fontSize=None,colour=None):
+        # Load default font.
+        if(fontSize==None):
+            fontSize = 32
+        font = ImageFont.truetype("/usr/share/fonts/truetype/droid/DroidSans.ttf", fontSize)
+        if(colour == None):
+            colour = 255
+        fontHeight = fontSize
+        if(x and y):
+            self.draw.text((x,y),string,font=font,fill=colour)
+        elif(x):
+            self.draw.text((x,(line*fontHeight)), string, font=font, fill=colour)
         else:
-            if(x):
-                if(len(string)<=maxChars):
-                    draw.text((x,(line*8)-2), string, font=font)
-                else:
-                    draw.text((x,(line*8)-2), "Error Fit", font=font)
-            else:
-                if(len(string)<=maxChars):
-                    draw.text((0,(line*8)-2), string, font=font)
-                else:
-                    draw.text((0,(line*8)-2), "Error Fit", font=font)
+            self.draw.text((0,(line*fontHeight)), string, font=font, fill=colour)
 
 
+
+#Setup Tkinter GUI
+root = Tkinter.Tk()
+root.overrideredirect(1)
+root.geometry("%dx%d+0+0" % (w,h))
+#root.focus_set()
+
+canvas = Tkinter.Canvas(root,width=w,height=h)
+canvas.pack()
 
 
 # Create blank image for drawing.
 # Make sure to create image with mode '1' for 1-bit color.
-image = Image.new('1', (LCD.LCDWIDTH, LCD.LCDHEIGHT))
+image = Image.new('1', (w, h))
 
 # Get drawing object to draw on image.
 draw = ImageDraw.Draw(image)
 
-newUI = UI(disp, draw)
+newUI = UI(canvas,image, draw)
 
 try:
     while 1:
@@ -301,7 +289,15 @@ try:
         newUI.update()
         newUI.resetInputs()
 
+        disp = ImageTk.BitmapImage(image)
+        canvas.create_image(0,0,image=disp,anchor='nw')
+
+
+
+        root.update()
+
 except KeyboardInterrupt:
-        PTCGPIO.GPIO.cleanup()
+        if(DEBUG == 0):
+            PTCGPIO.GPIO.cleanup()
         newUI.alarm.Stop()
-    
+        
