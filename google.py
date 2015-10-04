@@ -147,7 +147,8 @@ def vehicle_type(step):
 def routeInfo(route):
     departureTime = departure_time_str(route)
     arrivalTime = arrival_time_str(route)
-    routeInfo = {'DepartureTime':departureTime,'ArrivalTime':arrivalTime}
+    durationTime = trip_duration_str(route)
+    routeInfo = {'DepartureTime':departureTime,'ArrivalTime':arrivalTime,'DurationTime':durationTime}
 
     routeInfo['NumberSteps'] = num_steps(route)
 
