@@ -148,8 +148,8 @@ def routeInfo(route):
     departureTime = departure_time_str(route)
     arrivalTime = arrival_time_str(route)
     durationTime = trip_duration_str(route)
-    routeInfo = {'DepartureTime':departureTime,'ArrivalTime':arrivalTime,'DurationTime':durationTime}
-
+    numTransfers = num_transfers(route)
+    routeInfo = {'DepartureTime':departureTime,'ArrivalTime':arrivalTime,'DurationTime':durationTime,'Transfers':numTransfers}
     routeInfo['NumberSteps'] = num_steps(route)
 
     stepsInfo = []

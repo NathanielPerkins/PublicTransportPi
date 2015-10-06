@@ -180,21 +180,37 @@ class UI:
         return google.routeInfo(self.routes[self.selectedRoute])
 
     def writeIndividual(self):
+        line1_y = 34 
         routeInfo = self.fetchIndividual()
         self.clearBody()
         string =""
         times = routeInfo['DepartureTime']+"-"+routeInfo['ArrivalTime']
         duration = routeInfo['DurationTime']
+        transfers = " Transfers: " + `routeInfo['Transfers']`
         font = self.getFont(14)
-        self.writeText(times,font,x=1,y=34)
+
+       
+        
+        self.writeText(times,font,x=1,y=line1_y)
         strWidth,strHeight = font.getsize(duration)
-        self.writeText(duration,font,x=(w-strWidth),y=34)
+
+        line2_y = line1_y + strHeight + 10
+
+        self.writeText(duration,font,x=(w-strWidth),y=line1_y)
+        
+        transfersX,transfersY = font.getsize(transfers)
+
+        line3_y = line2_y+transfersY +5
+        
+        self.writeText(transfers,font,x=0,y=line2_y)
+        
         for i in range(routeInfo['NumberSteps']):
                 step = routeInfo['Steps'][i] 
                 if(step['Type']=='TRANSIT'):
-                    string+=step['Vehicle']+":"+step['LineName']+" -> "
+                    string+=step['Vehicle']+":"+step['LineName']+" > "
         string = string[:-4]
-        self.writeText(string,font,x=1,y=60)
+        self.writeText(string,font,x=25,y=line3_y)
+        #self.drawImage("Train",(100,100),transfersY)
 
         
                 
@@ -203,11 +219,27 @@ class UI:
         self.draw.line([0,31,w,31],fill=255)
         self.draw.line([0,32,w,32],fill=255)
         #Section 1 (below header/clock)
-        split = 240/3
+        split = h/2
         self.writeIndividual()
         self.draw.line([0,split,w,split],fill=255)
 
+    def swap_text_image(self, string):
         
+
+    def drawImage(self,image,location,height):
+        if(image == "Train"):
+            im = Image.open("rail.png")
+        elif(image == "Walk"):
+            im = Image.open("walk.png")
+        elif(image == "Bus"):
+            im = Image.open("bus.png")
+        else:
+            return -1
+        
+        iwidth,iheight = im.size
+        aspectRatio = iwidth/iheight
+        im = im.resize((height*aspectRatio,height), Image.NEAREST)
+        self.draw.bitmap(location,im,fill=255)
 
     def update(self):
         #self.writeIndividual()
