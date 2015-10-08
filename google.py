@@ -141,6 +141,13 @@ def vehicle_type(step):
     else:
         return None
 
+def first_transit(route):
+    for step in get_steps(route):
+        if(travel_type(step)=='TRANSIT'):
+            vehicle = vehicle_type(step)
+            lineName = step_transit_details_short_name(step)
+            stepInfo = {'Vehicle':vehicle,'LineName':lineName}
+            return stepInfo
 
 #--------------------------------Steps of Journey Information------------------------------#
 
@@ -149,7 +156,8 @@ def routeInfo(route):
     arrivalTime = arrival_time_str(route)
     durationTime = trip_duration_str(route)
     numTransfers = num_transfers(route)
-    routeInfo = {'DepartureTime':departureTime,'ArrivalTime':arrivalTime,'DurationTime':durationTime,'Transfers':numTransfers}
+    firstTrip = first_transit(route)
+    routeInfo = {'DepartureTime':departureTime,'ArrivalTime':arrivalTime,'DurationTime':durationTime,'Transfers':numTransfers,'FirstTrip':firstTrip}
     routeInfo['NumberSteps'] = num_steps(route)
 
     stepsInfo = []

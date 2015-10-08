@@ -14,6 +14,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageTk
 
 
 fontFilePath = "/usr/share/fonts/truetype/droid/DroidSans.ttf"
+fontFilePath2 = "/usr/share/fonts/truetype/droid/DroidSans-Bold.ttf"
 
 w = 320
 h = 240
@@ -138,28 +139,48 @@ class UI:
 #---------------------------------------------List Display-------------------------------------------------#
 
     def drawList(self):
-        font = self.getFont()
-        for i in range(google.num_routes(self.routes)):
-            numTransfers = google.num_transfers(self.routes[i])
-            transitSteps = google.get_transit_steps(self.routes[i])
-            if(numTransfers >1):
-                step = google.get_step(self.routes[i],transitSteps[0])
-                vehicle = google.vehicle_type(step)
-                lineName = google.step_transit_details_short_name(step)
-                string = vehicle[0] + ":" + lineName
-                for j in range(1,numTransfers):
-                    step = google.get_step(self.routes[i],transitSteps[j])
-                    vehicle = google.vehicle_type(step)
-                    lineName = google.step_transit_details_short_name(step)
-                    string += ">" + vehicle[0] + ":" + lineName
-                self.writeText(string,font,i+1)
-                    
-            else:
-                step = google.get_step(self.routes[i],transitSteps[0])
-                vehicle = google.vehicle_type(step)
-                lineName = google.step_transit_details_short_name(step)
-                string = vehicle[0] + ":" + lineName
-                self.writeText(string,font,i+1)
+        list_num = 3
+        starting_y = (2*h)/5
+        blockHeight = (h-starting_y)/(list_num)
+        font = self.getFont(14)
+        #fontBold = self.getFont(14,bold=True)
+        fontWidth,fontHeight = font.getsize("H|")
+        line_x = 20
+        line_x2 = 5
+        current_y = starting_y
+        for i in range(1,list_num+1):
+            if(i<len(self.routes)):
+                padding = (blockHeight + fontHeight)/2
+                routeInfo = self.fetchIndividual(i)
+
+                string1 = "Option "+`i`+":"
+                x,y = self.writeText(string1,font,x=line_x2,y=current_y+5)
+                line_x2 += x
+                
+                string1 = "  ("+`routeInfo['Transfers']`+ " Transfers)"
+                self.writeText(string1,font,x=line_x2,y=current_y+5)
+
+                string2 = routeInfo['DepartureTime']+"-"+routeInfo['ArrivalTime']+" | "
+                x,y = self.writeText(string2,font,x=line_x,y=current_y+padding-5)
+                line_x += x
+
+                x,y = self.drawImage(routeInfo['FirstTrip']['Vehicle'],(line_x,current_y+padding-5),y)
+                line_x += x+5
+
+                string2 = routeInfo['FirstTrip']['LineName']+" | "
+                x,y = self.writeText(string2,font,x=line_x,y=current_y+padding-5)
+                line_x += x
+
+                string2 = routeInfo['DurationTime']
+                x,y = self.writeText(string2,font,x=line_x,y=current_y+padding-5)
+                line_x += x
+                
+                current_y += blockHeight
+                self.draw.line([0,current_y,w,current_y],fill=255)
+
+                line_x = 20
+                line_x2 = 5
+                
             
     def changeSelectedRoute(self,buttonState):
         if(buttonState):
@@ -176,14 +197,14 @@ class UI:
 #----------------------------------Specific Display--------------------------------#
 
 
-    def fetchIndividual(self):
-        return google.routeInfo(self.routes[self.selectedRoute])
+    def fetchIndividual(self,routeIndex):
+        return google.routeInfo(self.routes[routeIndex])
 
     def writeIndividual(self):
         line1_y = 34 
-        routeInfo = self.fetchIndividual()
+        routeInfo = self.fetchIndividual(0)
         self.clearBody()
-        string =""
+        string = ""
         times = routeInfo['DepartureTime']+"-"+routeInfo['ArrivalTime']
         duration = routeInfo['DurationTime']
         transfers = " Transfers: " + `routeInfo['Transfers']`
@@ -203,15 +224,35 @@ class UI:
         line3_y = line2_y+transfersY +5
         
         self.writeText(transfers,font,x=0,y=line2_y)
+
+        lineLength = 25 #starting position
+
+        self.write_transfers(routeInfo,(lineLength,line3_y),font)
+
+    def write_transfers(self,routeInfo,startingLocation,font):
+        #Capital 'H' hits high, '|' hits low. Maximizing height
+        lineWidth,lineHeight = font.getsize("H|") 
+        pixelSpacing = 0
+        nextTransferSymbol = " > "
+        lineLength = startingLocation[0]
+
         
         for i in range(routeInfo['NumberSteps']):
-                step = routeInfo['Steps'][i] 
-                if(step['Type']=='TRANSIT'):
-                    string+=step['Vehicle']+":"+step['LineName']+" > "
-        string = string[:-4]
-        self.writeText(string,font,x=25,y=line3_y)
-        #self.drawImage("Train",(100,100),transfersY)
-
+            if(i == routeInfo['NumberSteps']-1):
+                nextTransferSymbol = ""
+            step = routeInfo['Steps'][i] 
+            if(step['Type']=='TRANSIT'):
+                x,y = self.drawImage(step['Vehicle'],(lineLength,startingLocation[1]),lineHeight)
+                lineLength += x + 5
+                string = step['LineName']+nextTransferSymbol
+                x,y = self.writeText(string,font,x=lineLength,y=startingLocation[1])
+                lineLength += x
+            else: #is walking
+                x,y = self.drawImage(step['Type'],(lineLength,startingLocation[1]),lineHeight)
+                lineLength += x + pixelSpacing
+                x,y = self.writeText(nextTransferSymbol,font,x=lineLength,y=startingLocation[1])
+                lineLength += x
+        
         
                 
     def drawUI(self):
@@ -219,11 +260,13 @@ class UI:
         self.draw.line([0,31,w,31],fill=255)
         self.draw.line([0,32,w,32],fill=255)
         #Section 1 (below header/clock)
-        split = h/2
+        split = (2*h)/5
         self.writeIndividual()
         self.draw.line([0,split,w,split],fill=255)
+        self.draw.line([0,split+1,w,split+1],fill=255)
 
-    def swap_text_image(self, string):
+        self.drawList()
+
         
 
     def drawImage(self,image,location,height):
@@ -233,6 +276,8 @@ class UI:
             im = Image.open("walk.png")
         elif(image == "Bus"):
             im = Image.open("bus.png")
+        elif(image == "Tram"):
+            im = Image.open("tram.png")
         else:
             return -1
         
@@ -240,6 +285,7 @@ class UI:
         aspectRatio = iwidth/iheight
         im = im.resize((height*aspectRatio,height), Image.NEAREST)
         self.draw.bitmap(location,im,fill=255)
+        return im.size
 
     def update(self):
         #self.writeIndividual()
@@ -252,11 +298,16 @@ class UI:
         self.changeSelectedRoute(self.buttonStates[0])
         
 
-    def getFont(self,fontSize=None):
-        if(fontSize):
-            font = ImageFont.truetype(fontFilePath,fontSize)
+    def getFont(self,fontSize=None,bold=None):
+        if(fontSize==None):
+            fontSize = 32
+        if(bold):
+            filePath = fontFilePath2
         else:
-            font = ImageFont.truetype(fontFilePath,32)
+            filePath = fontFilePath
+            
+        font = ImageFont.truetype(filePath,fontSize)
+        
         return font
         
 
@@ -273,4 +324,5 @@ class UI:
         else:
             self.draw.text((0,(line*fontDimensions[1])), string, font=font, fill=colour)
 
+        return fontDimensions
 

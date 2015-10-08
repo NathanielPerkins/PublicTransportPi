@@ -18,6 +18,7 @@ canvas.pack()
 # Make sure to create image with mode '1' for 1-bit color.
 image = Image.new('1', (w, h))
 
+
 # Get drawing object to draw on image.
 draw = ImageDraw.Draw(image)
 
