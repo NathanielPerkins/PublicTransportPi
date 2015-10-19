@@ -5,7 +5,7 @@ from GUIScreen import *
 w = 320
 h = 240
 
-SKIP_CHECK = 1
+SKIP_CHECK = 0
 
 def readConf():
     f = open("setup.conf",'r+')

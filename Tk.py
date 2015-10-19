@@ -32,7 +32,7 @@ class Application(Frame):
             self.createWindowThree()
             self.window = 3
         elif(self.window == 3):
-            self.SECURITY_PASSWORD = self.textBox.get("1.0",END)[:-1]
+            self.SECURITY_PASSWORD = self.textBox.get()
             self.destroyWindow()
             #print("SSID: "+self.SSID+", Security Type: "+self.SECURITY_TYPE+", Password: "+self.SECURITY_PASSWORD)
             self.destroy()
@@ -77,7 +77,7 @@ class Application(Frame):
         self.label = Label(self, text="Enter WiFI password:")
         self.label.pack()
         
-        self.textBox = Text(self, height=2, width=self.w/2)
+        self.textBox = Entry(self, show="*", width=self.w/2)
         self.textBox.bind("<Return>",self.keyPress)
         self.textBox.pack()
 
