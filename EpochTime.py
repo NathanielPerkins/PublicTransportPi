@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime,timedelta
 
 def get_current_time():
     return datetime.now()
@@ -20,5 +20,6 @@ def get_epoch_time(day, month, year, hour, minute, second=None):
     if second:
         time = datetime(year,month,day,hour,minute,second)
     else:
-        time = datetime(year,month,day,hour,minute,second)
+        time = datetime(year,month,day,hour,minute,0)
+    time = time - timedelta(hours=10)
     return (time - epoch).total_seconds()

@@ -19,12 +19,20 @@ mapService  = Client(API_KEY)
 # When mode is specified, give alternative routes
 
 # TODO: Add in validity checks, catch exceptions, ect
-def get_directions(start_location, end_location, mode=None):
-    if mode:
-        return mapService.directions(start_location, end_location, mode,alternatives=True)
-    else:
-        return mapService.directions(start_location, end_location)
-
+def get_directions(start_location, end_location, mode=None, arrival_time=None):
+    try:
+        if mode:
+            if arrival_time:
+                return mapService.directions(start_location, end_location, mode,alternatives=True,arrival_time=arrival_time)
+            else:    
+                return mapService.directions(start_location, end_location, mode,alternatives=True)
+        else:
+            if arrival_time:
+                return mapService.directions(start_location, end_location,arrival_time=arrival_time)
+            else:  
+                return mapService.directions(start_location, end_location)
+    except:
+        return 0
 #------------------------------------Route Information-----------------------------------#
 
 def get_route(directions,route=None):

@@ -15,6 +15,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageTk
 
 fontFilePath = "/usr/share/fonts/truetype/droid/DroidSans.ttf"
 fontFilePath2 = "/usr/share/fonts/truetype/droid/DroidSans-Bold.ttf"
+settingsFilePath = "settings.conf"
 
 w = 320
 h = 240
@@ -29,8 +30,8 @@ class UI:
     
 
     #------------Class Variables----------------------#
-    origin = []
     destination = []
+    routes = []
     selectedRoute = 0
     # The update time between updating routes
     updateTime = timedelta(minutes = 1) #seconds
@@ -58,9 +59,9 @@ class UI:
         self.nextUpdate = get_current_time()
         self.nextBlink = get_current_time() + self.blinkTime
         self.verticalUpdate = get_current_time() +self.verticalScrollTime
-        self.origin.append('Surfers Paradise, QLD')
-        self.destination.append('Queensland University of Technology')
-        self.routes = google.get_directions(self.origin[self.selectedRoute],self.destination[self.selectedRoute],'transit')
+        self.saveInformation()
+        self.getRoutes()
+        #self.routes = google.get_directions(self.origin[0],self.destination[self.selectedRoute],'transit')
         if(self.DEBUG == 0):
             PTCGPIO.setup(ledMap,buttonMap)
         self.buttonStates = [False] * len(buttonMap)
@@ -68,7 +69,57 @@ class UI:
         self.alarm = Alarm.Alarm()
         self.alarm.setAlarmEpoch(google.departure_time_val(self.routes[self.selectedRoute]))
 
+        
+    def getRoutes(self):
+        self.routes.append(google.get_directions(self.origin,self.destination[self.selectedRoute],'transit',self.arrivalTime)[0])
+        self.routes += google.get_directions(self.origin,self.destination[self.selectedRoute],'transit')
 
+
+    def updateAlarm(self,time):
+        if(type(time)==str):
+            date = get_current_utc_time().date()
+            day = date.day
+            month = date.month
+            year = date.year
+           
+            hour = int(time.split(":",1)[0])
+            minute = int(time.split(":",1)[1])
+            return get_epoch_time(day,month,year,hour,minute)
+        elif(type(time)==datetime):
+            date = get_current_utc_time().date()
+            day = date.day
+            month = date.month
+            year = date.year
+           
+            hour = time.hour
+            minute = time.minute
+            return get_epoch_time(day,month,year,hour,minute)
+           
+        
+    def saveInformation(self):
+        self.origin = self.readInformation(1)
+        self.destination.append(self.readInformation(2))
+
+        date = get_current_time().date()
+        day = date.day
+        month = date.month
+        year = date.year
+        time = self.readInformation(3)
+        hour = int(time.split(":",1)[0])
+        minute = int(time.split(":",1)[1])
+        self.arrivalTime = get_epoch_time(day,month,year,hour,minute)
+
+    
+    def readInformation(self,infoType):
+        f = open(settingsFilePath,'r')
+        i = 1
+        for line in f:
+            if(i == infoType):
+               return line.split(":",1)[1]
+            i += 1
+        f.close()
+
+        
     # Updates clock with current time
     # Blinks colon to indicate time passing
     def updateClockTime(self):

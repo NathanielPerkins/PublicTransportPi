@@ -74,7 +74,7 @@ class Application(Frame):
 
     def createWindowThree(self):
 
-        self.label = Label(self, text="Enter WiFI password:")
+        self.label = Label(self, text="Enter WiFi password:")
         self.label.pack()
         
         self.textBox = Entry(self, show="*", width=self.w/2)
