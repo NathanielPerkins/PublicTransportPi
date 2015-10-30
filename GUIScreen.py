@@ -34,7 +34,7 @@ class UI:
     routes = []
     selectedRoute = 0
     # The update time between updating routes
-    updateTime = timedelta(minutes = 1) #seconds
+    updateTime = timedelta(minutes = 1) #minutes
 
     #Clock variables
     blinkTime = timedelta(seconds = 1) #Frequency at which clock blinks
@@ -56,7 +56,7 @@ class UI:
 
         self.blinkOn = True
         
-        self.nextUpdate = get_current_time()
+        self.nextUpdate = get_current_time() + self.updateTime
         self.nextBlink = get_current_time() + self.blinkTime
         self.verticalUpdate = get_current_time() +self.verticalScrollTime
         self.saveInformation()
@@ -71,6 +71,7 @@ class UI:
 
         
     def getRoutes(self):
+        self.routes = []
         self.routes.append(google.get_directions(self.origin,self.destination[self.selectedRoute],'transit',self.arrivalTime)[0])
         self.routes += google.get_directions(self.origin,self.destination[self.selectedRoute],'transit')
 
@@ -343,9 +344,22 @@ class UI:
         self.updateClockTime()
         self.drawUI()
         #self.updateList()
-        if(self.alarm.checkAlarmEpoch(get_current_epoch_time()) == 1):
+        checkedAlarm = self.alarm.checkAlarmEpoch(get_current_epoch_time())
+        if(checkedAlarm == 1):
+            #Make LED's RED
             self.alarm.Play()
-        
+        elif(checkedAlarm == 2):
+            #Make LED's Yellow
+            self.alarm.Play() #Placeholder
+        else:
+            #LED's Green
+            self.alarm.Stop() #placeholder
+
+        if(self.timeCheck(self.nextUpdate)):
+            self.nextUpdate = get_current_time() + self.updateTime
+            self.getRoutes()
+            print("Updated")
+            
         self.changeSelectedRoute(self.buttonStates[0])
         
 
