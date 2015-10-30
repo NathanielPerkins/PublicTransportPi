@@ -7,7 +7,7 @@
 #from datetime import datetime
 from datetime import timedelta, time
 import google
-import Alarm
+import Alarm2
 from EpochTime import *
 from PIL import Image, ImageDraw, ImageFont, ImageTk
 
@@ -20,8 +20,8 @@ settingsFilePath = "settings.conf"
 w = 320
 h = 240
 
-buttonMap = [5]
-ledMap = []
+ledMap = [21,20,16]
+buttonMap = [26,19,13,6]
 
 
 class UI:
@@ -33,6 +33,7 @@ class UI:
     destination = []
     routes = []
     selectedRoute = 0
+	selectedDestination = 0
     # The update time between updating routes
     updateTime = timedelta(minutes = 1) #minutes
 
@@ -64,7 +65,7 @@ class UI:
         #self.routes = google.get_directions(self.origin[0],self.destination[self.selectedRoute],'transit')
         if(self.DEBUG == 0):
             PTCGPIO.setup(ledMap,buttonMap)
-        self.buttonStates = [False] * len(buttonMap)
+        self.buttonStates = [True] * len(buttonMap) #true due to active low buttons
         self.clearScreen()
         self.alarm = Alarm.Alarm()
         self.alarm.setAlarmEpoch(google.departure_time_val(self.routes[self.selectedRoute]))
@@ -72,8 +73,8 @@ class UI:
         
     def getRoutes(self):
         self.routes = []
-        self.routes.append(google.get_directions(self.origin,self.destination[self.selectedRoute],'transit',self.arrivalTime)[0])
-        self.routes += google.get_directions(self.origin,self.destination[self.selectedRoute],'transit')
+        self.routes.append(google.get_directions(self.origin,self.destination[self.selectedDestination],'transit',self.arrivalTime)[0])
+        self.routes += google.get_directions(self.origin,self.destination[self.selectedDestination],'transit')
 
 
     def updateAlarm(self,time):
@@ -98,17 +99,18 @@ class UI:
            
         
     def saveInformation(self):
-        self.origin = self.readInformation(1)
-        self.destination.append(self.readInformation(2))
-
-        date = get_current_time().date()
-        day = date.day
-        month = date.month
-        year = date.year
-        time = self.readInformation(3)
-        hour = int(time.split(":",1)[0])
-        minute = int(time.split(":",1)[1])
-        self.arrivalTime = get_epoch_time(day,month,year,hour,minute)
+	    time = self.readInformation(1)
+        self.arrivalTime = self.updateAlarm(time)
+		
+        self.origin = self.readInformation(2)
+		destinations = self.readInformation(3)
+		if(type(destinations) == list)
+			for i in range(len(destinations)):
+				destinations[i] = destinations[i].replace(')','')
+			
+			self.destination = destinations
+		else:
+			self.destination.append(destinations)
 
     
     def readInformation(self,infoType):
@@ -116,7 +118,10 @@ class UI:
         i = 1
         for line in f:
             if(i == infoType):
-               return line.split(":",1)[1]
+				if(infoType == 3):
+					return line.split(":",1)[1].split("(")
+				else:
+				   return line.split(":",1)[1]
             i += 1
         f.close()
 
@@ -178,7 +183,7 @@ class UI:
             self.buttonStates = on
 
     def resetInputs(self):
-        self.buttonStates = [False] * len(buttonMap)
+        self.buttonStates = [True] * len(buttonMap) #active low (True is default)
 
     def checkInput(self, button):
         if(self.DEBUG == 0):
@@ -234,17 +239,22 @@ class UI:
                 line_x2 = 5
                 
             
-    def changeSelectedRoute(self,buttonState):
-        if(buttonState):
-            #Reinitialize scrolling text index on route change
-            self.currentStep = 0
-            if(self.selectedRoute<google.num_routes(self.routes)-1):
-                self.selectedRoute += 1
-            else:
-                self.selectedRoute = 0
-            self.alarm.setAlarmEpoch(google.departure_time_val(self.routes[self.selectedRoute]))
-                                 
-     
+    def changeSelectedDestination(self,buttonState,changeUp):
+        if(not buttonState):
+			if(changeUp):
+				if(self.selectedDestination<len(self.destination)-1):
+					self.selectedDestination += 1
+				else:
+					self.selectedDestination = 0
+
+			else:
+				if(self.selectedDestination>0):
+					self.selectedDestination -= 1
+				else:
+					self.selectedDestination = len(self.destination)-1
+
+            self.getRoutes()
+			self.alarm.setAlarmEpoch(google.departure_time_val(self.routes[self.selectedRoute]))
 
 #----------------------------------Specific Display--------------------------------#
 
@@ -347,20 +357,34 @@ class UI:
         checkedAlarm = self.alarm.checkAlarmEpoch(get_current_epoch_time())
         if(checkedAlarm == 1):
             #Make LED's RED
-            self.alarm.Play()
+			if(self.DEBUG == 0):
+				GPIO.output(ledMap[0],False)
+				GPIO.output(ledMap[1],False)
+				GPIO.output(ledMap[2],True)#Red on
+				self.alarm.Play()
         elif(checkedAlarm == 2):
-            #Make LED's Yellow
-            self.alarm.Play() #Placeholder
+			#Make LED's Yellow
+			if(self.DEBUG == 0):
+				GPIO.output(ledMap[0],False)
+				GPIO.output(ledMap[1],True) #Yellow On
+				GPIO.output(ledMap[2],False)
+				self.alarm.Stop()
         else:
             #LED's Green
-            self.alarm.Stop() #placeholder
+				GPIO.output(ledMap[0],True) #Green on
+				GPIO.output(ledMap[1],False) 
+				GPIO.output(ledMap[2],False)
+				self.alarm.Stop()
 
         if(self.timeCheck(self.nextUpdate)):
             self.nextUpdate = get_current_time() + self.updateTime
             self.getRoutes()
-            print("Updated")
-            
-        self.changeSelectedRoute(self.buttonStates[0])
+        
+		if(self.DEBUG == 0):
+			if(not self.buttonStates[0]):
+				self.changeSelectedDestination(self.buttonStates[0],True)
+			else:
+				self.changeSelectedDestination(self.buttonStates[1],False)
         
 
     def getFont(self,fontSize=None,bold=None):

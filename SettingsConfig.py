@@ -23,19 +23,19 @@ class Application(Frame):
     def button_callback(self):
         if(self.window == 1):
             self.Departure = self.textBox.get("1.0",END)[:-1]
-            self.saveInformation(1,self.Departure)
+            self.saveInformation(2,self.Departure)
             self.destroyWindow()
             self.createWindowTwo()
             self.window = 2
         elif(self.window == 2):
             self.Destination = self.textBox.get("1.0",END)[:-1]
-            self.saveInformation(2,self.Destination)
+            self.saveInformation(3,self.Destination)
             self.destroyWindow()
             self.createWindowThree()
             self.window = 3
         elif(self.window == 3):
             self.Alarm = self.textBox.get("1.0",END)[:-1]
-            self.saveInformation(3,self.Alarm)
+            self.saveInformation(1,self.Alarm)
             self.destroyWindow()
             self.destroy()
             self.master.quit()
@@ -45,7 +45,7 @@ class Application(Frame):
         self.label.pack()
         
         self.textBox = Text(self, height=2, width=self.w/2)
-        self.textBox.insert(INSERT,self.readInformation(1)[:-1])
+        self.textBox.insert(INSERT,self.readInformation(2)[:-1])
         self.textBox.bind("<Return>",self.keyPress)
         self.textBox.pack()
 
@@ -66,7 +66,7 @@ class Application(Frame):
         self.label.pack()
         
         self.textBox = Text(self, height=2, width=self.w/2)
-        self.textBox.insert(INSERT,self.readInformation(2)[:-1])
+        self.textBox.insert(INSERT,self.readInformation(3)[:-1])
         self.textBox.bind("<Return>",self.keyPress)
         self.textBox.pack()
 
@@ -81,7 +81,7 @@ class Application(Frame):
         self.label.pack()
         
         self.textBox = Text(self, height=2, width=self.w/2)
-        self.textBox.insert(INSERT,self.readInformation(3)[:-1])
+        self.textBox.insert(INSERT,self.readInformation(1)[:-1])
         self.textBox.bind("<Return>",self.keyPress)
         self.textBox.pack()
 
@@ -106,20 +106,21 @@ class Application(Frame):
             data = file.readlines()
         file.close()
         
-        if(infoType == 1):
+		if(infoType == 1):
+            #Write alarm to third line fo file
+            string = 'Alarm:'+info+'\n'
+            data[2] = string
+
+        if(infoType == 2):
             #Write address to first line of file
             string = 'Departure:'+info+'\n'
             data[0]= string
 
-        if(infoType == 2):
+        if(infoType == 3):
             #Write destination address to second line of file
             string = 'Destination:'+info+'\n'
             data[1] = string
 
-        if(infoType == 3):
-            #Write alarm to third line fo file
-            string = 'Alarm:'+info+'\n'
-            data[2] = string
 
 
         with open(filePath, 'w') as file:

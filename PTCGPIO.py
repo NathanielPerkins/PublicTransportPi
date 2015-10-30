@@ -16,7 +16,8 @@ def buttonCheck(buttonMap):
         else:
             on.append(False)
     return on
-        
+
+""""
 ledMap = [21,20,16]
 buttonMap = [26,19,13,6]
 setup(ledMap,buttonMap)
@@ -40,19 +41,4 @@ while True:
         pwm.start(50)
     if(not on[3]):
         pwm.stop()
-"""
-print buttonCheck(buttonMap)
-while True:
-    on = buttonCheck(buttonMap)
-    if on[0] == 1:
-        print "DICKS"
-    if on[1] == 1:
-        print "BALLS"
-    sleep(0.5)
-
-while True:
-    if GPIO.input(14):
-        GPIO.output(12,True)
-    if not GPIO.input(14):
-        GPIO.output(12,False)
-   """ 
+""""
