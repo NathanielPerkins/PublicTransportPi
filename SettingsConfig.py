@@ -106,20 +106,20 @@ class Application(Frame):
             data = file.readlines()
         file.close()
         
-		if(infoType == 1):
+        if(infoType == 1):
             #Write alarm to third line fo file
             string = 'Alarm:'+info+'\n'
-            data[2] = string
+            data[0] = string
 
         if(infoType == 2):
             #Write address to first line of file
             string = 'Departure:'+info+'\n'
-            data[0]= string
+            data[1]= string
 
         if(infoType == 3):
             #Write destination address to second line of file
             string = 'Destination:'+info+'\n'
-            data[1] = string
+            data[2] = string
 
 
 

@@ -17,7 +17,7 @@ def buttonCheck(buttonMap):
             on.append(False)
     return on
 
-""""
+"""
 ledMap = [21,20,16]
 buttonMap = [26,19,13,6]
 setup(ledMap,buttonMap)
@@ -41,4 +41,4 @@ while True:
         pwm.start(50)
     if(not on[3]):
         pwm.stop()
-""""
+"""

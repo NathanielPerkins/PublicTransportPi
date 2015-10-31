@@ -10,7 +10,8 @@ import google
 import Alarm2
 from EpochTime import *
 from PIL import Image, ImageDraw, ImageFont, ImageTk
-
+import PTCGPIO
+import RPi.GPIO as GPIO
 
 
 fontFilePath = "/usr/share/fonts/truetype/droid/DroidSans.ttf"
@@ -21,11 +22,11 @@ w = 320
 h = 240
 
 ledMap = [21,20,16]
-buttonMap = [26,19,13,6]
+buttonMap = [13,19,6,26]
 
 
 class UI:
-    DEBUG = 1
+    DEBUG = 0
 
     
 
@@ -33,7 +34,7 @@ class UI:
     destination = []
     routes = []
     selectedRoute = 0
-	selectedDestination = 0
+    selectedDestination = 0
     # The update time between updating routes
     updateTime = timedelta(minutes = 1) #minutes
 
@@ -67,7 +68,7 @@ class UI:
             PTCGPIO.setup(ledMap,buttonMap)
         self.buttonStates = [True] * len(buttonMap) #true due to active low buttons
         self.clearScreen()
-        self.alarm = Alarm.Alarm()
+        self.alarm = Alarm2.Alarm()
         self.alarm.setAlarmEpoch(google.departure_time_val(self.routes[self.selectedRoute]))
 
         
@@ -99,18 +100,19 @@ class UI:
            
         
     def saveInformation(self):
-	    time = self.readInformation(1)
+	time = self.readInformation(1)
         self.arrivalTime = self.updateAlarm(time)
 		
         self.origin = self.readInformation(2)
-		destinations = self.readInformation(3)
-		if(type(destinations) == list)
-			for i in range(len(destinations)):
-				destinations[i] = destinations[i].replace(')','')
-			
-			self.destination = destinations
-		else:
-			self.destination.append(destinations)
+        destinations = self.readInformation(3)
+        if(type(destinations) == list):
+            for i in range(len(destinations)):
+                destinations[i] = destinations[i].replace(')','')
+            destinations = destinations[1:]
+            destinations[-1]= destinations[-1][:-1]
+            self.destination = destinations
+        else:
+            self.destination.append(destinations)
 
     
     def readInformation(self,infoType):
@@ -241,20 +243,20 @@ class UI:
             
     def changeSelectedDestination(self,buttonState,changeUp):
         if(not buttonState):
-			if(changeUp):
-				if(self.selectedDestination<len(self.destination)-1):
-					self.selectedDestination += 1
-				else:
-					self.selectedDestination = 0
+            if(changeUp):
+                if(self.selectedDestination<len(self.destination)-1):
+                    self.selectedDestination += 1
+		else:
+		    self.selectedDestination = 0
 
-			else:
-				if(self.selectedDestination>0):
-					self.selectedDestination -= 1
-				else:
-					self.selectedDestination = len(self.destination)-1
+	    else:
+		if(self.selectedDestination>0):
+		    self.selectedDestination -= 1
+		else:
+		    self.selectedDestination = len(self.destination)-1
 
             self.getRoutes()
-			self.alarm.setAlarmEpoch(google.departure_time_val(self.routes[self.selectedRoute]))
+	    self.alarm.setAlarmEpoch(google.departure_time_val(self.routes[self.selectedRoute]))
 
 #----------------------------------Specific Display--------------------------------#
 
@@ -357,34 +359,34 @@ class UI:
         checkedAlarm = self.alarm.checkAlarmEpoch(get_current_epoch_time())
         if(checkedAlarm == 1):
             #Make LED's RED
-			if(self.DEBUG == 0):
-				GPIO.output(ledMap[0],False)
-				GPIO.output(ledMap[1],False)
-				GPIO.output(ledMap[2],True)#Red on
-				self.alarm.Play()
+	    if(self.DEBUG == 0):
+                GPIO.output(ledMap[0],False)
+                GPIO.output(ledMap[1],False)
+                GPIO.output(ledMap[2],True)#Red on
+                self.alarm.Play()
         elif(checkedAlarm == 2):
-			#Make LED's Yellow
-			if(self.DEBUG == 0):
-				GPIO.output(ledMap[0],False)
-				GPIO.output(ledMap[1],True) #Yellow On
-				GPIO.output(ledMap[2],False)
-				self.alarm.Stop()
+            #Make LED's Yellow
+            if(self.DEBUG == 0):
+                GPIO.output(ledMap[0],False)
+                GPIO.output(ledMap[1],True) #Yellow On
+                GPIO.output(ledMap[2],False)
+                self.alarm.Stop()
         else:
             #LED's Green
-				GPIO.output(ledMap[0],True) #Green on
-				GPIO.output(ledMap[1],False) 
-				GPIO.output(ledMap[2],False)
-				self.alarm.Stop()
+            GPIO.output(ledMap[0],True) #Green on
+            GPIO.output(ledMap[1],False) 
+            GPIO.output(ledMap[2],False)
+            self.alarm.Stop()
 
         if(self.timeCheck(self.nextUpdate)):
             self.nextUpdate = get_current_time() + self.updateTime
             self.getRoutes()
         
-		if(self.DEBUG == 0):
-			if(not self.buttonStates[0]):
-				self.changeSelectedDestination(self.buttonStates[0],True)
-			else:
-				self.changeSelectedDestination(self.buttonStates[1],False)
+        if(self.DEBUG == 0):
+            if(not self.buttonStates[0]):
+                self.changeSelectedDestination(self.buttonStates[0],True)
+            else:
+                self.changeSelectedDestination(self.buttonStates[1],False)
         
 
     def getFont(self,fontSize=None,bold=None):

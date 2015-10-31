@@ -3,7 +3,7 @@ from EpochTime import *
 import RPi.GPIO as GPIO
 
 class Alarm:
-	self.pwmPin = 12
+    pwmPin = 12
    
     def __init__(self):
         self.Load()
@@ -23,12 +23,12 @@ class Alarm:
 
 
     def Load(self):
-		GPIO.setup(self.pwmPin,GPIO.OUT)
-		self.pwm = GPIO.PWM(self.pwmPin, 1000)
+        GPIO.setup(self.pwmPin,GPIO.OUT)
+        self.pwm = GPIO.PWM(self.pwmPin, 1000)
 
     def Play(self):
         if(self.alarmOn == False):
-		    self.pwm.start(50)
+            self.pwm.start(50)
             self.alarmOn = True
         
 

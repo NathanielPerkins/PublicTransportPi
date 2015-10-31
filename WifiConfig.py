@@ -1,7 +1,7 @@
 from Tkinter import *
 
 
-filePath = "wpa_supplicant.conf"
+filePath = "/etc/wpa_supplicant.conf"
 
 class Application(Frame):
 
