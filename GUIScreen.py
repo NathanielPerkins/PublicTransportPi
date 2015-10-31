@@ -16,7 +16,7 @@ import RPi.GPIO as GPIO
 
 fontFilePath = "/usr/share/fonts/truetype/droid/DroidSans.ttf"
 fontFilePath2 = "/usr/share/fonts/truetype/droid/DroidSans-Bold.ttf"
-settingsFilePath = "settings.conf"
+settingsFilePath = "/home/pi/PublicTransportPi/settings.conf"
 
 w = 320
 h = 240
@@ -35,6 +35,8 @@ class UI:
     routes = []
     selectedRoute = 0
     selectedDestination = 0
+
+    newChecked = 3
     # The update time between updating routes
     updateTime = timedelta(minutes = 1) #minutes
 
@@ -335,13 +337,13 @@ class UI:
 
     def drawImage(self,image,location,height):
         if(image == "Train"):
-            im = Image.open("rail.png")
+            im = Image.open("/home/pi/PublicTransportPi/rail.png")
         elif(image == "Walk"):
-            im = Image.open("walk.png")
+            im = Image.open("/home/pi/PublicTransportPi/walk.png")
         elif(image == "Bus"):
-            im = Image.open("bus.png")
+            im = Image.open("/home/pi/PublicTransportPi/bus.png")
         elif(image == "Tram"):
-            im = Image.open("tram.png")
+            im = Image.open("/home/pi/PublicTransportPi/tram.png")
         else:
             return -1
         
@@ -356,15 +358,24 @@ class UI:
         self.updateClockTime()
         self.drawUI()
         #self.updateList()
-        checkedAlarm = self.alarm.checkAlarmEpoch(get_current_epoch_time())
-        if(checkedAlarm == 1):
+        if(not self.buttonStates[3]):
+            if(self.newChecked>=3):
+                self.newChecked = 0
+            else:
+                self.newChecked +=1
+        if(self.newChecked != 3):
+            checkedAlarm = self.newChecked
+        else:
+            checkedAlarm = self.alarm.checkAlarmEpoch(get_current_epoch_time())
+            
+        if(checkedAlarm == 2):
             #Make LED's RED
 	    if(self.DEBUG == 0):
                 GPIO.output(ledMap[0],False)
                 GPIO.output(ledMap[1],False)
                 GPIO.output(ledMap[2],True)#Red on
                 self.alarm.Play()
-        elif(checkedAlarm == 2):
+        elif(checkedAlarm == 1):
             #Make LED's Yellow
             if(self.DEBUG == 0):
                 GPIO.output(ledMap[0],False)

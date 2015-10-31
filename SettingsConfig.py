@@ -1,7 +1,7 @@
 from Tkinter import *
 
 
-filePath = "settings.conf"
+filePath = "/home/pi/PublicTransportPi/settings.conf"
 
 class Application(Frame):
 
@@ -65,7 +65,7 @@ class Application(Frame):
         self.label = Label(self, text="Enter Destination Address:")
         self.label.pack()
         
-        self.textBox = Text(self, height=2, width=self.w/2)
+        self.textBox = Text(self, height=8, width=self.w/2)
         self.textBox.insert(INSERT,self.readInformation(3)[:-1])
         self.textBox.bind("<Return>",self.keyPress)
         self.textBox.pack()

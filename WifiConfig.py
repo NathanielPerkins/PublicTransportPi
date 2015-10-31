@@ -88,7 +88,7 @@ class Application(Frame):
 
     def saveNetwork(self,ssid,keyType,key):
         f = open(filePath,'a')
-        string = '\nnetwork{\n	ssid:"'+ssid+'"\n'
+        string = '\nnetwork={\n	ssid:"'+ssid+'"\n'
         string+= '	key_mgmt='+keyType+'\n'
         string+= '	psk="'+key+'"\n}'
 

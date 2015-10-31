@@ -14,10 +14,10 @@ class Alarm:
 
 
     def checkAlarmEpoch(self,currentTime):
-        if((self.alarmEpoch - currentTime)<=0):
-            return 1
-        elif((self.alarmEpoch - currentTime)<=300):#number of seconds in 5 minutes
+        if((self.alarmEpoch - currentTime)<=300):
             return 2
+        elif((self.alarmEpoch - currentTime)<=600):#number of seconds in 5 minutes
+            return 1
         else:
             return 0
 
